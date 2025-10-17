@@ -16,3 +16,11 @@ Two of the more popular native Web UI frameworks with a Python API are https://s
 
 ## Questions (related to PhysiCell Studio)
 * what interactive plotting packages are possible to use within Streamlit (or Gradio)?
+
+## Demos
+* after installing streamlit:
+```
+cd streamlit
+streamlit run cells_demo1.py
+```
+If you click the `Run the machine` button, it will plot a random set of circles. We want to be able to read circles (centers, radius) from a file and plot those.
