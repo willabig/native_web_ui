@@ -1,0 +1,45 @@
+From: "Vajja, Prudhvi" <pvajja@iu.edu>
+Subject: Re: Streamlit Module
+Date: August 12, 2020 at 3:58:48 AM EDT
+To: "Heiland, Randy" <heiland@iu.edu>
+
+I created a small streamlit application to generate circles with different radius and different colors. 
+I have also attaching the required python file and a working gif.
+
+CLI commands to run on local machine:
+pip install streamlit, numpy, matplotlib  # If the packages are not already present.
+Streamlit run Circles.py                          # From the file folder
+
+Working demo:
+(Circles.py)
+
+------------------------------
+
+On Aug 11, 2020, 9:24 AM -0400, Heiland, Randy <heiland@iu.edu>, wrote:
+Thanks for sharing that, Prudhvi. It’s always good to learn about new tools. If you learn the CLI and can demo how to draw circles, of varying radii, with varying colors, let me know.
+
+-Randy
+
+On Aug 11, 2020, at 12:36 AM, Vajja, Prudhvi <pvajja@iu.edu> wrote:
+
+Hi Randy,
+
+I don’t know if this is useful or not But I came across a python package called Streamlit In case you haven’t heard of it. I found this to be a useful and a good alternative for Ipywidgets and also this is very easy to code and implement.
+
+I thought of implementing some features of Cancer Nano therapy Simulator, But I was not able to understand the Github source code So I added a few examples of streamlit Implementations. Check it out and let me what you think.
+
+Examples:
+COVID Analysis
+Streamlit Gallery
+
+https://www.streamlit.io/gallery
+https://covid19.multivacplatform.org/
+
+<sample.gif>
+
+Your’s Sincerely,
+Prudhvi Vajja
+MS in Data Science
+2019-2021
+-------------------------------------
+

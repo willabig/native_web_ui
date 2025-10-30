@@ -17,6 +17,23 @@ Two of the more popular native Web UI frameworks with a Python API are https://s
 ## Questions (related to PhysiCell Studio)
 * what interactive plotting packages are possible to use within Streamlit (or Gradio)?
 
+## Set up venv for streamlit
+Do this one time:
+```
+cd ~   # to have your "studio_venv" created in your home directory
+python3 -m venv ~/venv_streamlit/
+```
+
+Thereafter, you will need to `source` it to have streamlit accessible as a Python module:
+```
+(base) M1P~/git/native_web_ui$ source ~/venv_streamlit/bin/activate
+# this will result in a prefixed prompt in your Terminal
+(venv_streamlit) (base) M1P~/git/native_web_ui$ 
+
+# Doing a "which" command will confirm that your "python" command is coming from the venv
+which python
+which pip
+```
 ## Demos
 * after installing streamlit:
 ```
