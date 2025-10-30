@@ -701,7 +701,10 @@ with microenv_tab:
         
         def delete_substrate(self):
             """Delete the current substrate"""
-            
+            if len(st.session_state.substrates) == 1:
+                st.error("Not allowed to delete all substrates.")
+                return
+
             if not st.session_state.current_substrate:
                 return
             
