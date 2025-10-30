@@ -11,6 +11,8 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from math import floor, log10
 
+st.set_page_config(page_title="Config Basics")
+
 def init_session_state():
     """Initialize session state variables"""
     if 'xml_root' not in st.session_state:
