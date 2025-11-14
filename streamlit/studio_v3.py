@@ -13,7 +13,6 @@ import numpy as np
 import csv
 import plotly.graph_objects as go
 import string
-import utils as utl
 
 #st.title("My Tabbed Dashboard")
 
@@ -24,7 +23,7 @@ st.set_page_config(layout="wide")
 
 st.markdown("""<link rel='stylesheet' href='studio.css' type='text/css'/>""", unsafe_allow_html=True)
 
-utl.local_css('studio.css')
+
 
 #----------------------------------------------------------
 with config_tab:
