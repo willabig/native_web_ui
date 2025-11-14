@@ -20,6 +20,10 @@ if 'substrates' not in st.session_state:
     st.session_state.substrates = ['oxygen', 'glucose']
 if 'cell_types' not in st.session_state:
     st.session_state.cell_types = ['default', 'cancer', 'immune']
+if 'num_rules' not in st.session_state:
+    st.session_state.num_rules = 0
+if 'plot_window_open' not in st.session_state:
+    st.session_state.plot_window_open = False
 
 # Helper functions
 def hill_function(x, base_val=0.0, saturation_val=1.0, half_max=0.5, hill_power=2):
@@ -113,33 +117,35 @@ def create_behavior_list(substrates, cell_types):
     
     return behavior_l
 
+def strip_comments(lines):
+    """Strip comments from CSV lines"""
+    for line in lines:
+        raw = line.split('//')[0].split('#')[0].strip()
+        if raw:
+            yield raw
+
 def load_csv_rules(file):
     """Load rules from CSV file"""
     try:
-        # Read CSV, handling comments
-        rules = []
         file.seek(0)
         content = file.read().decode('utf-8')
+        lines = content.split('\n')
         
-        for line in content.split('\n'):
-            # Remove comments (lines starting with // or #)
-            line = line.split('//')[0].split('#')[0].strip()
+        rules = []
+        for line in strip_comments(lines):
             if line:
                 rules.append(line)
         
-        # Parse CSV
         from io import StringIO
         csv_content = '\n'.join(rules)
+        
         df = pd.read_csv(StringIO(csv_content), header=None, names=[
             'Cell Type', 'Signal', 'Direction', 'Behavior',
             'Saturation Value', 'Half-max', 'Hill Power', 'Apply to Dead'
         ])
         
-        # Add Use and Base Value columns
         df.insert(0, 'Use', True)
         df['Base Value'] = '??'
-        
-        # Convert Apply to Dead to boolean
         df['Apply to Dead'] = df['Apply to Dead'].astype(int).astype(bool)
         
         return df
@@ -147,229 +153,351 @@ def load_csv_rules(file):
         st.error(f"Error loading CSV: {str(e)}")
         return None
 
-def save_csv_rules(df, filename):
+def save_csv_rules(df, filepath):
     """Save rules to CSV file"""
     try:
-        # Prepare data for CSV (exclude Use and Base Value columns)
-        output_df = df[df['Use'] == True].copy()
-        output_df = output_df[[
-            'Cell Type', 'Signal', 'Direction', 'Behavior',
-            'Saturation Value', 'Half-max', 'Hill Power', 'Apply to Dead'
-        ]]
+        os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
         
-        # Convert boolean to int
-        output_df['Apply to Dead'] = output_df['Apply to Dead'].astype(int)
+        with open(filepath, 'w', newline='') as f:
+            for idx, row in df.iterrows():
+                if not row['Use']:
+                    continue
+                
+                rule_parts = [
+                    str(row['Cell Type']),
+                    str(row['Signal']),
+                    str(row['Direction']),
+                    str(row['Behavior']),
+                    str(row['Saturation Value']),
+                    str(row['Half-max']),
+                    str(int(row['Hill Power'])),
+                    str(1 if row['Apply to Dead'] else 0)
+                ]
+                f.write(','.join(rule_parts) + '\n')
         
-        # Save to CSV
-        output_df.to_csv(filename, index=False, header=False)
         return True
     except Exception as e:
         st.error(f"Error saving CSV: {str(e)}")
         return False
 
-# Main UI
-st.title("🔬 PhysiCell Rules Editor")
+# Custom CSS to match original styling
+st.markdown("""
+<style>
+    .stButton>button {
+        width: 100%;
+    }
+    .add-rule-btn button {
+        background-color: #90EE90 !important;
+    }
+    .plot-btn button {
+        background-color: #90EE90 !important;
+    }
+    .save-btn button {
+        background-color: #FFFF00 !important;
+        color: black !important;
+    }
+    .delete-btn button {
+        background-color: #FFFF00 !important;
+        color: black !important;
+    }
+    .section-header {
+        text-align: center;
+        font-size: 16px;
+        font-weight: bold;
+        border-bottom: 1px solid #ccc;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-# Sidebar for configuration
-with st.sidebar:
-    st.header("Configuration")
+st.title("Rules")
+
+# Top section - Cell Type selection and buttons
+col_top1, col_top2, col_top3, col_top4 = st.columns([2, 2, 1, 1])
+
+with col_top1:
+    st.markdown("**Cell Type**")
+    cell_type = st.selectbox("Cell Type", st.session_state.cell_types, label_visibility="collapsed", key="cell_type_select")
+
+with col_top2:
+    st.write("")  # spacing
+
+with col_top3:
+    st.write("")
+    st.markdown('<div class="add-rule-btn">', unsafe_allow_html=True)
+    add_rule_btn = st.button("Add rule", key="add_rule_main")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col_top4:
+    st.write("")
+    st.markdown('<div class="plot-btn">', unsafe_allow_html=True)
+    plot_new_rule_btn = st.button("Plot", key="plot_new_rule")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+st.divider()
+
+# Signal and Behavior sections side by side
+col_left, col_right = st.columns([1, 1])
+
+with col_left:
+    # Signal section
+    st.markdown('<div class="section-header">----- Signal -----</div>', unsafe_allow_html=True)
     
-    # Rules enabled checkbox
-    rules_enabled = st.checkbox("Enable Rules", value=True)
+    signal_list = create_signal_list(st.session_state.substrates, st.session_state.cell_types)
+    signal = st.selectbox("Signal", signal_list, label_visibility="collapsed", key="signal_select")
     
-    st.divider()
+    st.write("")
+    st.write("")
     
-    # File management
-    st.subheader("File Management")
-    rules_folder = st.text_input("Rules Folder", value="config")
-    rules_file = st.text_input("Rules File", value="rules.csv")
+    # Base value (read-only style)
+    st.markdown("**Base value**")
+    base_value = st.text_input("Base value", value="0.1", disabled=True, label_visibility="collapsed", key="base_val")
     
-    # Import rules
-    uploaded_file = st.file_uploader("Import Rules CSV", type=['csv'])
+    st.write("")
+    
+    # Half-max and Saturation value
+    col_hm, col_sat = st.columns(2)
+    with col_hm:
+        st.markdown("**Half-max**")
+        half_max = st.number_input("Half-max", value=0.5, format="%.4f", label_visibility="collapsed", key="half_max")
+    
+    with col_sat:
+        st.markdown("**Saturation value**")
+        saturation_value = st.number_input("Saturation value", value=1.0, format="%.4f", label_visibility="collapsed", key="sat_val")
+    
+    st.write("")
+    
+    # Hill power and Apply to dead
+    col_hp, col_dead = st.columns(2)
+    with col_hp:
+        st.markdown("**Hill power**")
+        hill_power = st.number_input("Hill power", value=4, min_value=1, label_visibility="collapsed", key="hill_power")
+    
+    with col_dead:
+        st.write("")
+        apply_to_dead = st.checkbox("apply to dead", key="apply_dead")
+
+with col_right:
+    # Behavior section
+    col_beh_header, col_direction = st.columns([2, 1])
+    
+    with col_beh_header:
+        st.markdown('<div class="section-header">----- Behavior -----</div>', unsafe_allow_html=True)
+    
+    with col_direction:
+        direction = st.selectbox("", ["increases", "decreases"], label_visibility="collapsed", key="direction_select")
+    
+    behavior_list = create_behavior_list(st.session_state.substrates, st.session_state.cell_types)
+    behavior = st.selectbox("Behavior", behavior_list, label_visibility="collapsed", key="behavior_select")
+    
+    st.write("")
+    st.write("")
+    
+    # Rules enabled and Save section
+    st.markdown("**Enable rules:**")
+    rules_enabled = st.checkbox("", value=True, label_visibility="collapsed", key="rules_enabled")
+    
+    st.info("Make sure to save rules below before running simulations!")
+    
+    col_save1, col_save2, col_save3 = st.columns([1, 2, 2])
+    
+    with col_save1:
+        st.markdown('<div class="save-btn">', unsafe_allow_html=True)
+        save_btn = st.button("Save", key="save_rules")
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    with col_save2:
+        rules_folder = st.text_input("to:", value="config", label_visibility="collapsed", key="rules_folder")
+    
+    with col_save3:
+        rules_file = st.text_input("file", value="rules.csv", label_visibility="collapsed", key="rules_file")
+    
+    # Import button
+    st.markdown('<div class="save-btn">', unsafe_allow_html=True)
+    uploaded_file = st.file_uploader("Import", type=['csv'], key="import_rules", label_visibility="collapsed")
+    st.markdown('</div>', unsafe_allow_html=True)
+    
     if uploaded_file is not None:
         loaded_df = load_csv_rules(uploaded_file)
         if loaded_df is not None:
             st.session_state.rules_df = loaded_df
-            st.success("Rules loaded successfully!")
-    
-    # Save rules
-    if st.button("💾 Save Rules", type="primary", use_container_width=True):
-        filepath = os.path.join(rules_folder, rules_file)
-        if save_csv_rules(st.session_state.rules_df, filepath):
-            st.success(f"Rules saved to {filepath}")
-    
-    st.divider()
-    
-    # Data sources configuration
-    st.subheader("Data Sources")
-    
-    # Substrates
-    substrate_input = st.text_input("Substrates (comma-separated)", 
-                                     value=",".join(st.session_state.substrates))
-    st.session_state.substrates = [s.strip() for s in substrate_input.split(',') if s.strip()]
-    
-    # Cell types
-    celltype_input = st.text_input("Cell Types (comma-separated)", 
-                                    value=",".join(st.session_state.cell_types))
-    st.session_state.cell_types = [c.strip() for c in celltype_input.split(',') if c.strip()]
+            st.session_state.num_rules = len(loaded_df)
+            st.success("Rules imported successfully!")
+            st.rerun()
 
-# Main content area
-tab1, tab2, tab3 = st.tabs(["📝 Add Rule", "📊 Rules Table", "📈 Plot Rules"])
+st.divider()
 
-# Tab 1: Add New Rule
-with tab1:
-    st.header("Add New Rule")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Signal")
-        cell_type = st.selectbox("Cell Type", st.session_state.cell_types, key="new_cell_type")
-        
-        signal_list = create_signal_list(st.session_state.substrates, st.session_state.cell_types)
-        signal = st.selectbox("Signal", signal_list, key="new_signal")
-        
-        direction = st.selectbox("Direction", ["increases", "decreases"], key="new_direction")
-    
-    with col2:
-        st.subheader("Behavior")
-        behavior_list = create_behavior_list(st.session_state.substrates, st.session_state.cell_types)
-        behavior = st.selectbox("Behavior", behavior_list, key="new_behavior")
-    
-    st.divider()
-    
-    col3, col4, col5 = st.columns(3)
-    
-    with col3:
-        base_value = st.number_input("Base Value", value=0.1, format="%.4f", key="new_base")
-    
-    with col4:
-        saturation_value = st.number_input("Saturation Value", value=1.0, format="%.4f", key="new_sat")
-    
-    with col5:
-        half_max = st.number_input("Half-max", value=0.5, format="%.4f", key="new_half")
-    
-    col6, col7 = st.columns(2)
-    
-    with col6:
-        hill_power = st.number_input("Hill Power", value=4, min_value=1, key="new_hill")
-    
-    with col7:
-        apply_to_dead = st.checkbox("Apply to Dead", key="new_dead")
-    
-    # Validation and add button
-    col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 2])
-    
-    with col_btn1:
-        if st.button("➕ Add Rule", type="primary", use_container_width=True):
-            # Validate saturation vs base value
-            valid = True
-            if direction == "increases" and saturation_value < base_value:
-                st.error("Saturation value must be >= base value for 'increases'")
-                valid = False
-            elif direction == "decreases" and saturation_value > base_value:
-                st.error("Saturation value must be <= base value for 'decreases'")
-                valid = False
-            
-            if valid:
-                new_rule = pd.DataFrame([{
-                    'Use': True,
-                    'Cell Type': cell_type,
-                    'Signal': signal,
-                    'Direction': direction,
-                    'Behavior': behavior,
-                    'Saturation Value': saturation_value,
-                    'Half-max': half_max,
-                    'Hill Power': hill_power,
-                    'Apply to Dead': apply_to_dead,
-                    'Base Value': base_value
-                }])
-                st.session_state.rules_df = pd.concat([st.session_state.rules_df, new_rule], 
-                                                       ignore_index=True)
-                st.success("Rule added!")
-                st.rerun()
-    
-    with col_btn2:
-        if st.button("📊 Plot New Rule", use_container_width=True):
-            # Plot the new rule
-            X = np.linspace(0.0, 2.0 * half_max, 101)
-            Y = hill_function(X, base_val=base_value, saturation_val=saturation_value, 
-                            half_max=half_max, hill_power=hill_power)
-            
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(x=X, y=Y, mode='lines', name='Response',
-                                    line=dict(color='red', width=2)))
-            
-            fig.update_layout(
-                title=f"New Rule: {cell_type}",
-                xaxis_title=f"Signal: {signal}",
-                yaxis_title=f"Response: {behavior}",
-                hovermode='x unified',
-                showlegend=False
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
+# Rules Table
+st.markdown("### Rules Table")
 
-# Tab 2: Rules Table
-with tab2:
-    st.header("Current Rules")
+if len(st.session_state.rules_df) > 0:
+    # Display the table
+    edited_df = st.data_editor(
+        st.session_state.rules_df,
+        num_rows="dynamic",
+        use_container_width=True,
+        column_config={
+            "Use": st.column_config.CheckboxColumn("Use", default=True, width="small"),
+            "Cell Type": st.column_config.TextColumn("CellType", width="medium"),
+            "Signal": st.column_config.TextColumn("Signal", width="large"),
+            "Direction": st.column_config.TextColumn("Direction", width="small"),
+            "Behavior": st.column_config.TextColumn("Behavior", width="large"),
+            "Saturation Value": st.column_config.NumberColumn("Saturation value", format="%.4f", width="small"),
+            "Half-max": st.column_config.NumberColumn("Half-max", format="%.4f", width="small"),
+            "Hill Power": st.column_config.NumberColumn("Hill power", format="%.0f", width="small"),
+            "Apply to Dead": st.column_config.CheckboxColumn("Apply to dead", width="small"),
+            "Base Value": st.column_config.TextColumn("Base value", width="small"),
+        },
+        hide_index=True,
+        key="rules_table"
+    )
     
+    st.session_state.rules_df = edited_df
+    st.session_state.num_rules = len(edited_df)
+else:
+    st.info("No rules defined. Use 'Add rule' button to create rules.")
+
+st.write("")
+
+# Action buttons below table
+col_act1, col_act2, col_act3, col_act4 = st.columns([2, 2, 2, 6])
+
+with col_act1:
+    st.markdown('<div class="delete-btn">', unsafe_allow_html=True)
+    if st.button("Delete rule", key="delete_rule"):
+        if len(st.session_state.rules_df) > 0:
+            st.session_state.rules_df = st.session_state.rules_df.iloc[:-1]
+            st.session_state.num_rules = len(st.session_state.rules_df)
+            st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col_act2:
+    st.markdown('<div class="plot-btn">', unsafe_allow_html=True)
+    plot_rule_btn = st.button("Plot rule", key="plot_selected_rule")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col_act3:
+    st.markdown('<div class="plot-btn">', unsafe_allow_html=True)
+    plot_rules_btn = st.button("Plot rules", key="plot_all_rules")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col_act4:
+    st.markdown('<div class="delete-btn">', unsafe_allow_html=True)
+    if st.button("Clear table", key="clear_table"):
+        st.session_state.rules_df = pd.DataFrame(columns=st.session_state.rules_df.columns)
+        st.session_state.num_rules = 0
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# Handle Add Rule button
+if add_rule_btn:
+    # Validation
+    valid = True
+    base_val_float = float(base_value)
+    
+    if direction == "increases" and saturation_value < base_val_float:
+        st.error(f"Error: Behavior {behavior} cannot be increased with the given [Saturation value]. [Saturation value] must be greater than [Base value].")
+        valid = False
+    elif direction == "decreases" and saturation_value > base_val_float:
+        st.error(f"Error: Behavior {behavior} cannot be decreased with the given [Saturation value]. [Saturation value] must be lower than [Base value].")
+        valid = False
+    
+    if valid:
+        new_rule = pd.DataFrame([{
+            'Use': True,
+            'Cell Type': cell_type,
+            'Signal': signal,
+            'Direction': direction,
+            'Behavior': behavior,
+            'Saturation Value': saturation_value,
+            'Half-max': half_max,
+            'Hill Power': hill_power,
+            'Apply to Dead': apply_to_dead,
+            'Base Value': base_value
+        }])
+        st.session_state.rules_df = pd.concat([st.session_state.rules_df, new_rule], ignore_index=True)
+        st.session_state.num_rules = len(st.session_state.rules_df)
+        st.success("Rule added!")
+        st.rerun()
+
+# Handle Plot New Rule button
+if plot_new_rule_btn:
+    st.markdown("---")
+    st.markdown("### Rule Plot")
+    
+    base_val_float = float(base_value)
+    X = np.linspace(0.0, 2.0 * half_max, 101)
+    Y = hill_function(X, base_val=base_val_float, saturation_val=saturation_value, 
+                    half_max=half_max, hill_power=hill_power)
+    
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=X, y=Y, mode='lines', name='Response',
+                            line=dict(color='red', width=2)))
+    
+    fig.update_layout(
+        title=f"[New rule] cell type: {cell_type}",
+        xaxis_title=f"signal: {signal}",
+        yaxis_title=f"response: {behavior}",
+        hovermode='x unified',
+        showlegend=False,
+        height=400
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+
+# Handle Plot Selected Rule button
+if plot_rule_btn:
     if len(st.session_state.rules_df) > 0:
-        # Display editable dataframe
-        edited_df = st.data_editor(
-            st.session_state.rules_df,
-            num_rows="dynamic",
-            use_container_width=True,
-            column_config={
-                "Use": st.column_config.CheckboxColumn("Use", default=True),
-                "Apply to Dead": st.column_config.CheckboxColumn("Apply to Dead"),
-                "Saturation Value": st.column_config.NumberColumn("Saturation Value", format="%.4f"),
-                "Half-max": st.column_config.NumberColumn("Half-max", format="%.4f"),
-                "Hill Power": st.column_config.NumberColumn("Hill Power", format="%.1f"),
-            }
+        st.markdown("---")
+        st.markdown("### Rule Plot")
+        
+        # Use last rule as selected (simplified - could add selection mechanism)
+        irow = len(st.session_state.rules_df) - 1
+        rule = st.session_state.rules_df.iloc[irow]
+        
+        half_max_val = float(rule['Half-max'])
+        X = np.linspace(0.0, 2.0 * half_max_val, 101)
+        
+        base_val = float(rule['Base Value']) if rule['Base Value'] != '??' else (
+            1.0 if rule['Direction'] == 'decreases' else 0.0
         )
         
-        st.session_state.rules_df = edited_df
+        Y = hill_function(X, 
+                        base_val=base_val,
+                        saturation_val=float(rule['Saturation Value']),
+                        half_max=half_max_val,
+                        hill_power=int(rule['Hill Power']))
         
-        # Action buttons
-        col1, col2, col3 = st.columns([1, 1, 3])
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=X, y=Y, mode='lines', name='Response',
+                                line=dict(color='red', width=2)))
         
-        with col1:
-            if st.button("🗑️ Clear All Rules", type="secondary"):
-                st.session_state.rules_df = pd.DataFrame(columns=st.session_state.rules_df.columns)
-                st.rerun()
+        fig.update_layout(
+            title=f"Rule {irow+1}: cell type: {rule['Cell Type']}",
+            xaxis_title=f"signal: {rule['Signal']}",
+            yaxis_title=f"response: {rule['Behavior']}",
+            hovermode='x unified',
+            showlegend=False,
+            height=400
+        )
         
-        with col2:
-            # Download as CSV
-            csv = st.session_state.rules_df.to_csv(index=False)
-            st.download_button(
-                label="⬇️ Download CSV",
-                data=csv,
-                file_name="rules_export.csv",
-                mime="text/csv"
-            )
-        
-        st.info(f"Total rules: {len(st.session_state.rules_df)} | Active rules: {st.session_state.rules_df['Use'].sum()}")
+        st.plotly_chart(fig, use_container_width=True)
     else:
-        st.info("No rules defined yet. Add rules in the 'Add Rule' tab.")
+        st.warning("You need to select a row in the table")
 
-# Tab 3: Plot Rules
-with tab3:
-    st.header("Visualize Rules")
-    
+# Handle Plot All Rules button
+if plot_rules_btn:
     if len(st.session_state.rules_df) > 0:
-        # Select rule to plot
-        rule_options = [f"Rule {i+1}: {row['Cell Type']} - {row['Signal']} → {row['Behavior']}" 
-                       for i, row in st.session_state.rules_df.iterrows()]
+        st.markdown("---")
+        st.markdown("### All Rules Plot")
         
-        selected_rule_idx = st.selectbox("Select Rule to Plot", 
-                                         range(len(rule_options)), 
-                                         format_func=lambda x: rule_options[x])
+        fig_all = go.Figure()
         
-        if st.button("📈 Plot Selected Rule", type="primary"):
-            rule = st.session_state.rules_df.iloc[selected_rule_idx]
+        for idx, rule in st.session_state.rules_df.iterrows():
+            if not rule['Use']:
+                continue
             
-            # Generate plot
             half_max_val = float(rule['Half-max'])
             X = np.linspace(0.0, 2.0 * half_max_val, 101)
             
@@ -383,84 +511,26 @@ with tab3:
                             half_max=half_max_val,
                             hill_power=int(rule['Hill Power']))
             
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(x=X, y=Y, mode='lines', name='Response',
-                                    line=dict(color='red', width=3)))
-            
-            # Add reference lines
-            fig.add_hline(y=base_val, line_dash="dash", line_color="blue", 
-                         annotation_text="Base Value")
-            fig.add_hline(y=float(rule['Saturation Value']), line_dash="dash", 
-                         line_color="green", annotation_text="Saturation Value")
-            fig.add_vline(x=half_max_val, line_dash="dash", line_color="orange",
-                         annotation_text="Half-max")
-            
-            fig.update_layout(
-                title=f"Rule {selected_rule_idx+1}: {rule['Cell Type']}",
-                xaxis_title=f"Signal: {rule['Signal']}",
-                yaxis_title=f"Response: {rule['Behavior']}",
-                hovermode='x unified',
-                height=500
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Display rule details
-            with st.expander("Rule Details"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.write(f"**Cell Type:** {rule['Cell Type']}")
-                    st.write(f"**Signal:** {rule['Signal']}")
-                    st.write(f"**Direction:** {rule['Direction']}")
-                    st.write(f"**Behavior:** {rule['Behavior']}")
-                with col2:
-                    st.write(f"**Base Value:** {rule['Base Value']}")
-                    st.write(f"**Saturation Value:** {rule['Saturation Value']}")
-                    st.write(f"**Half-max:** {rule['Half-max']}")
-                    st.write(f"**Hill Power:** {rule['Hill Power']}")
-                    st.write(f"**Apply to Dead:** {'Yes' if rule['Apply to Dead'] else 'No'}")
+            fig_all.add_trace(go.Scatter(
+                x=X, y=Y, mode='lines',
+                name=f"{rule['Cell Type']}: {rule['Signal']} → {rule['Behavior']}"[:50],
+                line=dict(width=2)
+            ))
         
-        # Plot all rules comparison
-        if st.checkbox("Show All Rules Comparison"):
-            st.subheader("All Rules Overlay")
-            
-            fig_all = go.Figure()
-            
-            for idx, rule in st.session_state.rules_df.iterrows():
-                if not rule['Use']:
-                    continue
-                    
-                half_max_val = float(rule['Half-max'])
-                X = np.linspace(0.0, 2.0 * half_max_val, 101)
-                
-                base_val = float(rule['Base Value']) if rule['Base Value'] != '??' else (
-                    1.0 if rule['Direction'] == 'decreases' else 0.0
-                )
-                
-                Y = hill_function(X, 
-                                base_val=base_val,
-                                saturation_val=float(rule['Saturation Value']),
-                                half_max=half_max_val,
-                                hill_power=int(rule['Hill Power']))
-                
-                fig_all.add_trace(go.Scatter(
-                    x=X, y=Y, mode='lines',
-                    name=f"Rule {idx+1}: {rule['Cell Type'][:10]}...",
-                    line=dict(width=2)
-                ))
-            
-            fig_all.update_layout(
-                title="All Active Rules",
-                xaxis_title="Signal Strength",
-                yaxis_title="Response",
-                hovermode='x unified',
-                height=600
-            )
-            
-            st.plotly_chart(fig_all, use_container_width=True)
+        fig_all.update_layout(
+            title="All Active Rules",
+            xaxis_title="Signal",
+            yaxis_title="Response",
+            hovermode='x unified',
+            height=500
+        )
+        
+        st.plotly_chart(fig_all, use_container_width=True)
     else:
-        st.info("No rules to plot. Add some rules first!")
+        st.info("No rules to plot")
 
-# Footer
-st.divider()
-st.caption("PhysiCell Rules Editor - Streamlit Version | Based on PhysiCell Studio")
+# Handle Save button
+if save_btn:
+    filepath = os.path.join(rules_folder, rules_file)
+    if save_csv_rules(st.session_state.rules_df, filepath):
+        st.success(f"Rules saved to {filepath}")
