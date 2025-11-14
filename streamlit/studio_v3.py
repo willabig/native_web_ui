@@ -13,7 +13,6 @@ import numpy as np
 import csv
 import plotly.graph_objects as go
 import string
-import streamlit.components.v1 as components
 
 #st.title("My Tabbed Dashboard")
 
@@ -22,7 +21,16 @@ config_tab, microenv_tab, celltypes_tab, userparams_tab, rules_tab, run_tab, plo
 st.set_page_config(layout="wide")
 
 
-components.html("""<link rel='stylesheet' href='studio.css'>""")
+st.markdown("""
+
+<style>
+.st-be {
+    background: orange;
+    padding: 0 1em;
+}
+</stle>
+            
+""", unsafe_allow_html=True)
 
 
 
