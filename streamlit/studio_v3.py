@@ -28,6 +28,9 @@ st.markdown("""
     background: orange;
     padding: 0 1em;
 }
+.st-bd {
+    color: black;
+}
 </stle>
             
 """, unsafe_allow_html=True)
