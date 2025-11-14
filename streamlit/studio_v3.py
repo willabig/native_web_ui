@@ -942,21 +942,6 @@ with microenv_tab:
     substrate_def = SubstrateDef(config_tab=None)
     substrate_def.render()
 
-#----------------------------------------------------------
-with plot_tab:
-    # st.header("Plot results")
-    # st.write("This tab shows some raw data.")
-    # st.dataframe({"Column 1": [1, 2, 3], "Column 2": [4, 5, 6]})
-    fig, ax = plt.subplots()
-    low = -500
-    high = 500
-    size = 300
-    xvals = [random.uniform(low,high) for _ in range(size)]
-    yvals = [random.uniform(low,high) for _ in range(size)]
-    ax.scatter(xvals, yvals)
-    ax.set_box_aspect(1)
-    # other plotting actions...
-    st.pyplot(fig)
 
 #----------------------------------------------------------
 
@@ -1490,8 +1475,9 @@ with rules_tab:
         if save_csv_rules(st.session_state.rules_df, filepath):
             st.success(f"Rules saved to {filepath}")
 
-with celltypes_tab:
+#--------------------------------------------------------------
 
+with celltypes_tab:
 
     # Page configuration
     st.set_page_config(page_title="Cell Definitions", layout="wide")
@@ -1616,66 +1602,66 @@ with celltypes_tab:
     st.title("🧬 Cell Definitions")
 
     # Sidebar for cell type management
-    with st.sidebar:
-        st.header("Cell Type Management")
+    
+    st.container("Cell Type Management", border=None, key=None, width="stretch", height="content", horizontal=False, horizontal_alignment="left", vertical_alignment="top", gap="small")
         
-        # Cell type selector
-        if st.session_state.param_d:
-            cell_types = list(st.session_state.param_d.keys())
-            current_index = cell_types.index(st.session_state.current_cell_def) if st.session_state.current_cell_def in cell_types else 0
-            selected_cell = st.selectbox(
-                "Select Cell Type",
-                cell_types,
-                index=current_index,
-                key="cell_selector"
-            )
-            st.session_state.current_cell_def = selected_cell
-        else:
-            st.info("No cell types defined. Create one below.")
+    # Cell type selector
+    if st.session_state.param_d:
+        cell_types = list(st.session_state.param_d.keys())
+        current_index = cell_types.index(st.session_state.current_cell_def) if st.session_state.current_cell_def in cell_types else 0
+        selected_cell = st.selectbox(
+            "Select Cell Type",
+            cell_types,
+            index=current_index,
+            key="cell_selector"
+        )
+        st.session_state.current_cell_def = selected_cell
+    else:
+        st.info("No cell types defined. Create one below.")
+
+    st.divider()
+
+    # Action buttons
+    col1, col2 = st.columns(2)
         
-        st.divider()
-        
-        # Action buttons
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("➕ New", use_container_width=True, type="primary"):
+    with col1:
+        if st.button("➕ New", use_container_width=True, type="primary"):
+            new_name = random_name("cell_", 3)
+            while new_name in st.session_state.param_d:
                 new_name = random_name("cell_", 3)
+            new_cell_def(new_name)
+            st.session_state.current_cell_def = new_name
+            st.rerun()
+    
+    with col2:
+        if st.button("📋 Copy", use_container_width=True, type="primary"):
+            if st.session_state.current_cell_def:
+                new_name = random_name("copy_", 3)
                 while new_name in st.session_state.param_d:
-                    new_name = random_name("cell_", 3)
-                new_cell_def(new_name)
+                    new_name = random_name("copy_", 3)
+                copy_cell_def(st.session_state.current_cell_def, new_name)
                 st.session_state.current_cell_def = new_name
                 st.rerun()
-        
-        with col2:
-            if st.button("📋 Copy", use_container_width=True, type="primary"):
-                if st.session_state.current_cell_def:
-                    new_name = random_name("copy_", 3)
-                    while new_name in st.session_state.param_d:
-                        new_name = random_name("copy_", 3)
-                    copy_cell_def(st.session_state.current_cell_def, new_name)
-                    st.session_state.current_cell_def = new_name
-                    st.rerun()
-        
-        if st.button("🗑️ Delete", use_container_width=True, type="secondary"):
-            if st.session_state.current_cell_def:
-                if delete_cell_def(st.session_state.current_cell_def):
-                    st.rerun()
-                else:
-                    st.error("Cannot delete the last cell type!")
-        
-        st.divider()
-        
-        # ID Management
-        st.checkbox("Auto-number IDs when saved", value=True)
-        
-        # Display current cell types
-        if st.session_state.param_d:
-            st.subheader("Current Cell Types")
-            for cdname, params in st.session_state.param_d.items():
-                is_current = cdname == st.session_state.current_cell_def
-                prefix = "▶ " if is_current else "  "
-                st.text(f"{prefix}{cdname} (ID: {params.get('ID', 'N/A')})")
+    
+    if st.button("🗑️ Delete", use_container_width=True, type="secondary"):
+        if st.session_state.current_cell_def:
+            if delete_cell_def(st.session_state.current_cell_def):
+                st.rerun()
+            else:
+                st.error("Cannot delete the last cell type!")
+    
+    st.divider()
+    
+    # ID Management
+    st.checkbox("Auto-number IDs when saved", value=True)
+    
+    # Display current cell types
+    if st.session_state.param_d:
+        st.subheader("Current Cell Types")
+        for cdname, params in st.session_state.param_d.items():
+            is_current = cdname == st.session_state.current_cell_def
+            prefix = "▶ " if is_current else "  "
+            st.text(f"{prefix}{cdname} (ID: {params.get('ID', 'N/A')})")
 
     # Main content area
     if not st.session_state.current_cell_def or not st.session_state.param_d:
@@ -2026,3 +2012,20 @@ with celltypes_tab:
     with col3:
         if st.button("📥 Import XML", use_container_width=True):
             st.info("XML import functionality to be implemented")
+
+
+#----------------------------------------------------------
+with plot_tab:
+    # st.header("Plot results")
+    # st.write("This tab shows some raw data.")
+    # st.dataframe({"Column 1": [1, 2, 3], "Column 2": [4, 5, 6]})
+    fig, ax = plt.subplots()
+    low = -500
+    high = 500
+    size = 300
+    xvals = [random.uniform(low,high) for _ in range(size)]
+    yvals = [random.uniform(low,high) for _ in range(size)]
+    ax.scatter(xvals, yvals)
+    ax.set_box_aspect(1)
+    # other plotting actions...
+    st.pyplot(fig)
