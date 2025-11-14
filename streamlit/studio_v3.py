@@ -1603,8 +1603,9 @@ with celltypes_tab:
 
     # Sidebar for cell type management
     
-    st.container("Cell Type Management", border=None, key=None, width="stretch", height="content", horizontal=False, horizontal_alignment="left", vertical_alignment="top", gap="small")
-        
+    container = st.container(border=None, key=None, width="stretch", height="content", horizontal=False, horizontal_alignment="left", vertical_alignment="top", gap="small")
+    container.write("Cell Type Management")
+
     # Cell type selector
     if st.session_state.param_d:
         cell_types = list(st.session_state.param_d.keys())
