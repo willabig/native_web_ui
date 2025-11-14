@@ -21,7 +21,7 @@ config_tab, microenv_tab, celltypes_tab, userparams_tab, rules_tab, run_tab, plo
 st.set_page_config(layout="wide")
 
 
-st.markdown("""<link rel='stylesheet' href='studio.css' type='text/css'/>""", unsafe_allow_html=True)
+st.markdown("""<link rel='stylesheet' href='studio.css' type='text/css'>""", unsafe_allow_html=True)
 
 
 
