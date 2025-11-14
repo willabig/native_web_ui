@@ -20,7 +20,7 @@ import string
 config_tab, microenv_tab, celltypes_tab, userparams_tab, rules_tab, run_tab, plot_tab = st.tabs(["Config Basics", "Microenv", "Cell Types", "User Params", "Rules", "Run", "Plot"])
 st.set_page_config(layout="wide")
 
-with open('./css/studio.css') as f:
+with open('./files/studio.css') as f:
     css = f.read()
 
 st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
