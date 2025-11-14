@@ -5,3 +5,11 @@
 .stApp > tabs {
     border: 1px solid black;
 }
+
+.stApp > header {
+    background-color: orange;
+}
+
+.tabs {
+    border: 2px solid black;
+}
