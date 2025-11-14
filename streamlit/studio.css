@@ -1,0 +1,7 @@
+.stApp {
+    background-color: #ECECEC;
+}
+
+.stApp > tabs {
+    border: 1px solid black;
+}

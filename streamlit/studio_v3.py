@@ -20,6 +20,11 @@ import string
 config_tab, microenv_tab, celltypes_tab, userparams_tab, rules_tab, run_tab, plot_tab = st.tabs(["Config Basics", "Microenv", "Cell Types", "User Params", "Rules", "Run", "Plot"])
 st.set_page_config(layout="wide")
 
+with open('studio.css') as f:
+    css = f.read()
+
+st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
+
 #----------------------------------------------------------
 with config_tab:
     # st.header("Config Basics")
