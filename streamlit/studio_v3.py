@@ -1264,7 +1264,6 @@ with rules_tab:
                 st.session_state.rules_df = loaded_df
                 st.session_state.num_rules = len(loaded_df)
                 st.success("Rules imported successfully!")
-                st.rerun()
 
     st.divider()
 
