@@ -31,6 +31,12 @@ st.markdown("""
 .st-bd {
     color: black;
 }
+.st-c9 {
+    background-color: black;
+}
+.st-emotion-cache-1r4qj8v {
+    background: #ECECEC;
+}
 </stle>
             
 """, unsafe_allow_html=True)
