@@ -18,7 +18,7 @@ import re
 #st.title("My Tabbed Dashboard")
 
 # Create the tabs
-config_tab, microenv_tab, celltypes_tab, userparams_tab, rules_tab, run_tab, plot_tab = st.tabs(["Config Basics", "Microenv", "Cell Types", "User Params", "Rules", "Run", "Plot"])
+config_tab, microenv_tab, celltypes_tab, user_params_tab, rules_tab, run_tab, plot_tab = st.tabs(["Config Basics", "Microenv", "Cell Types", "User Params", "Rules", "Run", "Plot"])
 st.set_page_config(layout="wide")
 
 
@@ -2358,16 +2358,16 @@ class UserParams:
                 st.rerun()
 
 
-# Main app
-def main():
-    st.set_page_config(page_title="User Parameters", layout="wide")
-    
-    user_params = UserParams()
-    user_params.render()
+    # Main app
+    def main():
+        st.set_page_config(page_title="User Parameters", layout="wide")
+        
+        user_params = UserParams()
+        user_params.render()
 
 
-if __name__ == "__main__":
-    main()
+    if __name__ == "__main__":
+        main()
 
 #--------------------------------------------------------------------
 with plot_tab:
