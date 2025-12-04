@@ -13,6 +13,7 @@ import numpy as np
 import csv
 import plotly.graph_objects as go
 import string
+import re
 
 #st.title("My Tabbed Dashboard")
 
@@ -2038,20 +2039,6 @@ with celltypes_tab:
 
 
 #----------------------------------------------------------
-
-"""
-User Parameters Tab - Streamlit Version
-Translated from PyQt5 to Streamlit
-
-Authors:
-Randy Heiland (heiland@iu.edu)
-Dr. Paul Macklin (macklinp@iu.edu)
-"""
-
-import streamlit as st
-import xml.etree.ElementTree as ET
-import pandas as pd
-import re
 
 class UserParams:
     def __init__(self):
