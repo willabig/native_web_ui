@@ -37,10 +37,15 @@ st.markdown("""
     padding: 0 1em;
 }
             
+.st-c2 {
+    background-color: black;
+}
+            
 button[aria-selected="true"] {
     font-weight: bold !important;
     border: none !important;
     text-decoration: none !important;
+    color: black !important;
 }
             
 button[aria-selected="false"]:hover {
