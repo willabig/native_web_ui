@@ -32,16 +32,28 @@ st.set_page_config(layout="wide")
 st.markdown("""
 
 <style>
-.st-be {
+.st-bv {
     background: orange;
     padding: 0 1em;
 }
-.st-bd {
-    color: black;
+            
+button[aria-selected="true"] {
+    font-weight: bold !important;
+    border-bottom: none !important;
 }
-.st-c9 {
-    background-color: black;
+            
+button[aria-selected="false"]:hover {
+    background-color: #ECECEC !important;
+    color: black !important;
+    border-bottom: none !important;
 }
+            
+.stTabs[data-baseweb="tab-panel"] {
+    padding: 20px;
+    background-color: orange;
+    border: none;
+    }
+            
 .st-emotion-cache-1r4qj8v {
     background: #ECECEC;
 }
