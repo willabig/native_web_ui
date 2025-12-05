@@ -39,7 +39,8 @@ st.markdown("""
             
 button[aria-selected="true"] {
     font-weight: bold !important;
-    border-bottom: none !important;
+    border: none !important;
+    text-decoration: none !important;
 }
             
 button[aria-selected="false"]:hover {
@@ -48,6 +49,12 @@ button[aria-selected="false"]:hover {
     border-bottom: none !important;
 }
             
+button[aria-selected="true"]:hover {
+    background-color: #ECECEC !important;
+    color: black !important;
+    border-bottom: none !important;
+}
+                      
 .stTabs[data-baseweb="tab-panel"] {
     padding: 20px;
     background-color: orange;
