@@ -32,10 +32,6 @@ st.set_page_config(layout="wide")
 st.markdown("""
 
 <style>
-.st-bv {
-    background: orange;
-    padding: 0 1em;
-}
             
 .st-c2 {
     background-color: black;
@@ -44,8 +40,15 @@ st.markdown("""
 button[aria-selected="true"] {
     font-weight: bold !important;
     border: none !important;
+    background-color: orange !important;
+    padding: 20px;
     text-decoration: none !important;
     color: black !important;
+}
+            
+button[aria-selected="false"] {
+    background-color: orange !important;
+    padding: 20px;
 }
             
 button[aria-selected="false"]:hover {
@@ -61,10 +64,8 @@ button[aria-selected="true"]:hover {
 }
                       
 .stTabs[data-baseweb="tab-panel"] {
-    padding: 20px;
-    background-color: orange;
     border: none;
-    }
+}
             
 .st-emotion-cache-1r4qj8v {
     background: #ECECEC;
