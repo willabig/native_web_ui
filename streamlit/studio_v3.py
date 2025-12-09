@@ -2,7 +2,6 @@ import streamlit as st
 import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from math import floor, log10
 from numpy import random as np
 import matplotlib.pyplot as plt
 import random
@@ -2772,13 +2771,20 @@ with plot_tab:
     # st.header("Plot results")
     # st.write("This tab shows some raw data.")
     # st.dataframe({"Column 1": [1, 2, 3], "Column 2": [4, 5, 6]})
-    fig, ax = plt.subplots()
-    low = -500
-    high = 500
-    size = 300
-    xvals = [random.uniform(low,high) for _ in range(size)]
-    yvals = [random.uniform(low,high) for _ in range(size)]
-    ax.scatter(xvals, yvals)
-    ax.set_box_aspect(1)
-    # other plotting actions...
-    st.pyplot(fig)
+    col1, col2 = st.columns([1, 2])
+    
+    with col1:
+        True = st.button("Play:")
+
+    with col2:
+        if True:
+            fig, ax = plt.subplots()
+            low = -500
+            high = 500
+            size = 300
+            xvals = [random.uniform(low,high) for _ in range(size)]
+            yvals = [random.uniform(low,high) for _ in range(size)]
+            ax.scatter(xvals, yvals)
+            ax.set_box_aspect(1)
+            # other plotting actions...
+            st.pyplot(fig)
