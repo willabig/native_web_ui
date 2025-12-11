@@ -69,6 +69,19 @@ button[aria-selected="true"]:hover {
 .st-emotion-cache-1r4qj8v {
     background: #ECECEC;
 }
+
+button[kind="primary"] {
+    background-color: #ffa000; 
+    color: black;         
+}
+                    
+st.Button button[kind="primary"]:hover {
+    background-color: #c7c6c7 !important;      
+}
+            
+.st-emotion-cache-1cl4umz {
+    border: 1px solid black !important;       
+}            
 </stle>
             
 """, unsafe_allow_html=True)
@@ -213,24 +226,11 @@ with config_tab:
         with col2:
             st.text_input("Output folder", key="folder", value="output")
         
-        # Random Seed
-        st.markdown("**Random seed:**")
-        random_seed_type = st.radio(
-            "Select random seed type:",
-            ["System clock", "Integer seed"],
-            key="random_seed_type",
-            horizontal=True
-        )
-        
-        if random_seed_type == "Integer seed":
-            st.number_input("Seed value", key="random_seed_integer", 
-                        min_value=0, step=1, value=0)
-            st.warning("⚠️ WARNING: random_seed in user_parameters will take precedence if it remains.")
         
         st.markdown("---")
         
         # Save Data Section
-        st.markdown("### Save Data (intervals)")
+        st.markdown("**Save Data (intervals)**")
         
         col1, col2, col3 = st.columns(3)
         
@@ -256,7 +256,7 @@ with config_tab:
         st.markdown("---")
         
         # Plot SVG Substrate Section
-        st.markdown("### Plot SVG Substrate")
+        st.markdown("**Plot SVG Substrate**")
         
         plot_substrate = st.checkbox("Enable substrate plotting", key="plot_substrate_svg", value=True)
         
@@ -285,7 +285,7 @@ with config_tab:
         st.markdown("---")
         
         # Initial Conditions Section
-        st.markdown("### Initial Conditions of Cells (x,y,z, type)")
+        st.markdown("**Initial Conditions of Cells (x,y,z, type)**")
         
         cells_csv_enabled = st.checkbox("Enable CSV cell seeding", key="cells_csv", value=False)
         
@@ -305,7 +305,7 @@ with config_tab:
         st.markdown("---")
         
         # Cell Global Behaviors
-        st.markdown("### Cells' Global Behaviors")
+        st.markdown("**Cells' Global Behaviors**")
         
         st.checkbox("Virtual walls (nudge cells away from domain boundaries)", 
                 key="virtual_walls", value=True)
@@ -313,62 +313,18 @@ with config_tab:
         st.markdown("---")
         
         # Action Buttons
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
         
         with col1:
-            if st.button("Load XML", use_container_width=True):
-                load_xml_config()
-        
+            if st.button("Validate", use_container_width=True):
+                validate_config()   
+
         with col2:
             if st.button("Save XML", use_container_width=True):
                 save_xml_config()
         
-        with col3:
-            if st.button("Validate", use_container_width=True):
-                validate_config()
 
-    def load_xml_config():
-        """Load configuration from XML"""
-        if st.session_state.xml_root is None:
-            st.error("No XML root loaded")
-            return
-        
-        try:
-            # Load domain values
-            st.session_state.xmin = float(st.session_state.xml_root.find(".//x_min").text)
-            st.session_state.xmax = float(st.session_state.xml_root.find(".//x_max").text)
-            st.session_state.xdel = float(st.session_state.xml_root.find(".//dx").text)
-            
-            st.session_state.ymin = float(st.session_state.xml_root.find(".//y_min").text)
-            st.session_state.ymax = float(st.session_state.xml_root.find(".//y_max").text)
-            st.session_state.ydel = float(st.session_state.xml_root.find(".//dy").text)
-            
-            st.session_state.zmin = float(st.session_state.xml_root.find(".//z_min").text)
-            st.session_state.zmax = float(st.session_state.xml_root.find(".//z_max").text)
-            st.session_state.zdel = float(st.session_state.xml_root.find(".//dz").text)
-            
-            # Load time values
-            st.session_state.max_time_input = st.session_state.xml_root.find(".//max_time").text
-            st.session_state.diffusion_dt = float(st.session_state.xml_root.find(".//dt_diffusion").text)
-            st.session_state.mechanics_dt = float(st.session_state.xml_root.find(".//dt_mechanics").text)
-            st.session_state.phenotype_dt = float(st.session_state.xml_root.find(".//dt_phenotype").text)
-            
-            # Load misc parameters
-            st.session_state.num_threads = int(st.session_state.xml_root.find(".//omp_num_threads").text)
-            st.session_state.folder = st.session_state.xml_root.find(".//save//folder").text
-            
-            # Load SVG settings
-            st.session_state.svg_interval = float(st.session_state.xml_root.find(".//SVG//interval").text)
-            svg_enable = st.session_state.xml_root.find(".//SVG//enable").text.lower() == 'true'
-            st.session_state.save_svg = svg_enable
-            
-            # Load substrate list
-            fill_substrates_comboboxes()
-            
-            st.success("Configuration loaded successfully!")
-            
-        except Exception as e:
-            st.error(f"Error loading XML: {str(e)}")
+
 
     def save_xml_config():
         """Save configuration to XML"""
@@ -404,12 +360,6 @@ with config_tab:
             use_2d = 'true' if (zmax - zmin) <= zdel else 'false'
             st.session_state.xml_root.find(".//domain//use_2D").text = use_2d
             
-            # Save random seed
-            if st.session_state.get('random_seed_type') == "System clock":
-                st.session_state.xml_root.find(".//options//random_seed").text = "system_clock"
-            else:
-                st.session_state.xml_root.find(".//options//random_seed").text = str(
-                    st.session_state.get('random_seed_integer', 0))
             
             # Save virtual walls
             vwall = 'true' if st.session_state.get('virtual_walls', False) else 'false'
@@ -1206,7 +1156,7 @@ with rules_tab:
     </style>
     """, unsafe_allow_html=True)
 
-    st.title("Rules")
+    #st.title("Rules")
 
     # Top section - Cell Type selection and buttons
     col_top1, col_top2, col_top3, col_top4 = st.columns([2, 2, 1, 1])
@@ -1634,26 +1584,9 @@ with celltypes_tab:
             return True
         return False
 
-    # Custom CSS
-    st.markdown("""
-    <style>
-        .cell-def-header {
-            background-color: orange;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            text-align: center;
-            font-weight: bold;
-        }
-        .section-divider {
-            border-top: 2px solid #ccc;
-            margin: 20px 0;
-        }
-    </style>
-    """, unsafe_allow_html=True)
 
     # Main Title
-    st.title("🧬 Cell Definitions")
+    st.markdown("### Cell Definitions")
 
     # Sidebar for cell type management
     
@@ -2265,7 +2198,7 @@ with user_params_tab:
             """Render the Streamlit UI"""
             self.initialize_session_state()
             
-            st.title("User Parameters")
+            st.markdown("### User Parameters")
             
             # Search box
             search_term = st.text_input("🔍 Search for Name...", key="search_box", max_chars=400)
@@ -2650,10 +2583,10 @@ with run_tab:
             """Render the Streamlit UI"""
             self.initialize_session_state()
             
-            st.title("Run Simulation")
+            st.markdown("### Run Simulation")
             
             # Control panel
-            st.markdown("### Simulation Controls")
+            st.markdown("**Simulation Controls**")
             
             col1, col2 = st.columns([1, 1])
             
@@ -2668,7 +2601,7 @@ with run_tab:
                     )
                 else:
                     if st.button(
-                        "▶️ Run Simulation",
+                        "Run Simulation",
                         use_container_width=True,
                         type="primary"
                     ):
@@ -2679,7 +2612,7 @@ with run_tab:
             with col2:
                 # Cancel button
                 if st.button(
-                    "⏹️ Cancel",
+                    "Cancel",
                     disabled=not st.session_state.process_running,
                     use_container_width=True,
                     type="secondary"
@@ -2688,7 +2621,7 @@ with run_tab:
                     st.rerun()
             
             # Configuration inputs
-            st.markdown("### Configuration")
+            st.markdown("**Configuration**")
             
             col1, col2 = st.columns(2)
             
@@ -2714,7 +2647,7 @@ with run_tab:
             
             # Output display
             st.markdown("---")
-            st.markdown("### Terminal Output")
+            st.markdown("**Terminal Output**")
             
             # Check for new output if process is running
             if st.session_state.process_running:
@@ -2771,17 +2704,20 @@ with plot_tab:
     # st.header("Plot results")
     # st.write("This tab shows some raw data.")
     # st.dataframe({"Column 1": [1, 2, 3], "Column 2": [4, 5, 6]})
-    col1, col2 = st.columns([1, 2])
+    col1, col2 = st.columns([1, 3])
     
     with col1:
-        True = st.button("Play:")
+        st.button("Play:")
+
+        cmin = st.number_input("Minimum (-1000 - 0)", min_value=-1000, max_value=0, value=-500, key="cmin")
+        cmax = float(st.number_input("Maximum (0-1000)", min_value=0, max_value=1000, value=500, key="cmax"))
 
     with col2:
         if True:
             fig, ax = plt.subplots()
-            low = -500
-            high = 500
-            size = 300
+            low = cmin
+            high = cmax
+            size = 200
             xvals = [random.uniform(low,high) for _ in range(size)]
             yvals = [random.uniform(low,high) for _ in range(size)]
             ax.scatter(xvals, yvals)
